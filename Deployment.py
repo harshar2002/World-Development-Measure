@@ -1,13 +1,14 @@
 import streamlit as st
 import numpy as np
+import pandas as pd
 import joblib
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# Load the saved K-Means model, scaler, and PCA model
+# Load the saved models
 kmeans = joblib.load('kmeans_model.joblib')
 scaler = joblib.load('scaler_model.joblib')
-pca = joblib.load('pca_model.joblib')
+pca_model = joblib.load('pca_model.joblib')
 
 # Define the feature names used in the clustering model
 features = [
@@ -47,22 +48,22 @@ for feature in features:
     )
     user_input.append(value)
 
-# Convert user inputs into a NumPy array for scaling
-user_data = np.array(user_input).reshape(1, -1)
+# Convert user inputs into a pandas DataFrame with feature names
+user_data_df = pd.DataFrame([user_input], columns=features)
 
 # Check if all values are zero
-if np.all(user_data == 0):
+if user_data_df.isna().all(axis=1).all():
     st.error("Error: All input values are zero. Please enter valid non-zero values.")
 else:
-    # Apply the scaler to standardize the user input
-    input_scaled = scaler.transform(user_data)
-    
-    # Apply PCA transformation to the scaled input
-    input_pca = pca.transform(input_scaled)
+    # Apply scaling to the user input
+    input_scaled = scaler.transform(user_data_df)
 
-    # Predict cluster on button click
+    # Transform the scaled data using PCA
+    input_pca = pca_model.transform(input_scaled)
+
+    # Predict the cluster on button click
     if st.button("Predict Cluster"):
-        # Predict the cluster
+        # Predict the cluster using the transformed data
         cluster = kmeans.predict(input_pca)
         cluster_name = cluster_names.get(cluster[0], "Unknown Cluster")
         st.success(f"Your country is classified into the **{cluster_name}** cluster!")
